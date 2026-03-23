@@ -1,0 +1,53 @@
+package com.taskmanager.controller;
+
+import com.taskmanager.dto.TaskResponse;
+import com.taskmanager.repository.TaskRepository;
+import com.taskmanager.repository.UserRepository;
+import com.taskmanager.util.DtoMapper;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/admin")
+@PreAuthorize("hasRole('ADMIN')")
+public class AdminController {
+
+    private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
+
+    public AdminController(TaskRepository taskRepository, UserRepository userRepository) {
+        this.taskRepository = taskRepository;
+        this.userRepository = userRepository;
+    }
+
+    // List ALL tasks from ALL users (ADMIN only)
+    @GetMapping("/tasks")
+    public ResponseEntity<List<TaskResponse>> getAllTasks() {
+        List<TaskResponse> tasks = taskRepository.findAll()
+                .stream()
+                .filter(task -> !task.getDeleted())
+                .map(DtoMapper::toTaskResponse)
+                .toList();
+        return ResponseEntity.ok(tasks);
+    }
+
+    // List all registered users (ADMIN only)
+    @GetMapping("/users")
+    public ResponseEntity<List<Map<String, Object>>> getAllUsers() {
+        List<Map<String, Object>> users = userRepository.findAll()
+                .stream()
+                .map(user -> Map.<String, Object>of(
+                        "id", user.getId(),
+                        "name", user.getName(),
+                        "email", user.getEmail(),
+                        "role", user.getRole().name(),
+                        "createdAt", user.getCreatedAt().toString()
+                ))
+                .toList();
+        return ResponseEntity.ok(users);
+    }
+}
