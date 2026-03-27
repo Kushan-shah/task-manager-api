@@ -7,7 +7,7 @@ A REST API for task management built with **Spring Boot 3**. The backend is desi
 
 Interact with the live, deployed API via Swagger UI:
 
-- **AWS Deployment:** [http://13.126.55.172:8080/swagger-ui/index.html#/](http://13.126.55.172:8080/swagger-ui/index.html#/)
+- **AWS Deployment:** [http://13.126.55.172/swagger-ui/index.html#/](http://13.126.55.172/swagger-ui/index.html#/)
 - **Render Deployment:** [https://task-manager-api-live.onrender.com/swagger-ui.html](https://task-manager-api-live.onrender.com/swagger-ui.html)
 
 ## Key Features
