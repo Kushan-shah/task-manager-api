@@ -1,5 +1,6 @@
 package com.taskmanager.entity;
 
+import com.taskmanager.entity.enums.AiStatus;
 import com.taskmanager.entity.enums.TaskPriority;
 import com.taskmanager.entity.enums.TaskStatus;
 import jakarta.persistence.*;
@@ -25,6 +26,9 @@ public class Task {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    private Long version;
+
     @Column(nullable = false)
     private String title;
 
@@ -42,7 +46,7 @@ public class Task {
     @Column(name = "due_date")
     private LocalDate dueDate;
 
-    @Column(name = "file_url")
+    @Column(name = "file_url", columnDefinition = "TEXT")
     private String fileUrl;
 
     @Column(nullable = false)
@@ -52,6 +56,27 @@ public class Task {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    // ========================
+    // AI FIELDS
+    // ========================
+
+    @Column(name = "ai_summary", columnDefinition = "TEXT")
+    private String aiSummary;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ai_priority")
+    private TaskPriority aiPriority;
+
+    @Column(name = "ai_tags", columnDefinition = "TEXT")
+    private String aiTags; // comma-separated, e.g. "bug,backend,urgent"
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ai_status")
+    private AiStatus aiStatus;
+
+    @Column(name = "ai_error_message", columnDefinition = "TEXT")
+    private String aiErrorMessage;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -68,6 +93,9 @@ public class Task {
         }
         if (this.deleted == null) {
             this.deleted = false;
+        }
+        if (this.aiStatus == null) {
+            this.aiStatus = AiStatus.PENDING;
         }
     }
 

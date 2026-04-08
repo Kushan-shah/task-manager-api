@@ -14,8 +14,8 @@ import java.util.List;
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificationExecutor<Task> {
 
-    // For scheduler: find overdue tasks
-    @Query("SELECT t FROM Task t WHERE t.dueDate < :today AND t.status <> :doneStatus AND t.deleted = false")
+    // For scheduler: find overdue tasks (JOIN FETCH to prevent N+1 on user lazy-load)
+    @Query("SELECT t FROM Task t JOIN FETCH t.user WHERE t.dueDate < :today AND t.status <> :doneStatus AND t.deleted = false")
     List<Task> findOverdueTasks(@Param("today") LocalDate today, @Param("doneStatus") TaskStatus doneStatus);
 
     // For dashboard: count tasks by status for a user
@@ -30,4 +30,7 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
     @Query("SELECT t FROM Task t WHERE t.user.id = :userId AND t.deleted = false AND " +
             "(LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<Task> searchByKeyword(@Param("userId") Long userId, @Param("keyword") String keyword);
+
+    // For dashboard: find all tasks for AI status counting
+    List<Task> findByUserIdAndDeletedFalse(Long userId);
 }

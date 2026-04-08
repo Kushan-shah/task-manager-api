@@ -20,23 +20,28 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.core.task.TaskRejectedException;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
+@Transactional
 public class TaskService {
 
     private static final Logger log = LoggerFactory.getLogger(TaskService.class);
     private final TaskRepository taskRepository;
+    private final AiAnalysisService aiAnalysisService;
 
-    public TaskService(TaskRepository taskRepository) {
+    public TaskService(TaskRepository taskRepository, AiAnalysisService aiAnalysisService) {
         this.taskRepository = taskRepository;
+        this.aiAnalysisService = aiAnalysisService;
     }
 
     // ==================== CRUD ====================
 
-    @CacheEvict(value = "dashboard", allEntries = true)
+    @CacheEvict(value = "dashboard", key = "#user.id")
     public TaskResponse createTask(TaskRequest request, User user) {
         log.info("Creating task '{}' for user: {}", request.getTitle(), user.getEmail());
 
@@ -52,6 +57,14 @@ public class TaskService {
 
         Task saved = taskRepository.save(task);
         log.info("Task created with ID: {}", saved.getId());
+
+        // Trigger AI analysis in background — does NOT block API response
+        try {
+            aiAnalysisService.analyzeTaskAsync(saved.getId());
+        } catch (TaskRejectedException e) {
+            log.warn("AI Task queue is full! Task ID {} saved but AI analysis is delayed pending manual/cron retry.", saved.getId());
+        }
+
         return DtoMapper.toTaskResponse(saved);
     }
 
@@ -61,7 +74,7 @@ public class TaskService {
         return DtoMapper.toTaskResponse(task);
     }
 
-    @CacheEvict(value = "dashboard", allEntries = true)
+    @CacheEvict(value = "dashboard", key = "#user.id")
     public TaskResponse updateTask(Long taskId, TaskRequest request, User user) {
         log.info("Updating task ID: {} by user: {}", taskId, user.getEmail());
         Task task = findTaskAndValidateOwnership(taskId, user);
@@ -74,13 +87,16 @@ public class TaskService {
         if (request.getDueDate() != null) {
             task.setDueDate(request.getDueDate());
         }
+        if (request.getStatus() != null) {
+            task.setStatus(request.getStatus());
+        }
 
         Task updated = taskRepository.save(task);
         log.info("Task ID: {} updated successfully", updated.getId());
         return DtoMapper.toTaskResponse(updated);
     }
 
-    @CacheEvict(value = "dashboard", allEntries = true)
+    @CacheEvict(value = "dashboard", key = "#user.id")
     public void deleteTask(Long taskId, User user) {
         log.info("Soft-deleting task ID: {} by user: {}", taskId, user.getEmail());
         Task task = findTaskAndValidateOwnership(taskId, user);
@@ -126,13 +142,23 @@ public class TaskService {
         long inProgressCount = taskRepository.countByUserAndStatus(userId, TaskStatus.IN_PROGRESS);
         long doneCount = taskRepository.countByUserAndStatus(userId, TaskStatus.DONE);
         long overdueCount = taskRepository.countOverdueByUser(userId, today, TaskStatus.DONE);
+        long total = todoCount + inProgressCount + doneCount;
+        double completionRate = total > 0 ? Math.round((doneCount * 100.0 / total) * 10) / 10.0 : 0;
+
+        // Count AI-analyzed tasks
+        List<Task> allTasks = taskRepository.findByUserIdAndDeletedFalse(userId);
+        long aiAnalyzedCount = allTasks.stream()
+                .filter(t -> t.getAiStatus() == com.taskmanager.entity.enums.AiStatus.DONE)
+                .count();
 
         return DashboardResponse.builder()
-                .totalTasks(todoCount + inProgressCount + doneCount)
+                .totalTasks(total)
                 .todoCount(todoCount)
                 .inProgressCount(inProgressCount)
                 .doneCount(doneCount)
                 .overdueCount(overdueCount)
+                .completionRate(completionRate)
+                .aiAnalyzedCount(aiAnalyzedCount)
                 .build();
     }
 
