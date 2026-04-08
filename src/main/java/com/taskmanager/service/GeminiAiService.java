@@ -74,7 +74,7 @@ public class GeminiAiService {
                         .uri(URI.create(GEMINI_URL + key))
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                        .timeout(Duration.ofSeconds(15))
+                        .timeout(Duration.ofSeconds(10))
                         .build();
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
