@@ -1,7 +1,7 @@
 # Task Manager API
 
 ## Overview
-A REST API for task management built with **Spring Boot 3**. The backend is designed to handle core operations securely while integrating **JWT Authentication** for stateless user sessions. Data is persisted in **PostgreSQL**, with **Redis** used to cache frequently accessed dashboard metrics. File attachments are stored securely in **Amazon S3**. The application is containerized using **Docker** to ensure consistent deployments across AWS environments.
+An **AI-powered** REST API for task management built with **Spring Boot 3** and **Google Gemini**. The backend is designed to handle core operations securely while integrating **JWT Authentication** for stateless user sessions. Data is persisted in **PostgreSQL**, with **Redis** used as a distributed cache for frequently accessed dashboard metrics (with auto-TTL of 10 minutes). File attachments are stored securely in **Amazon S3** with a local storage fallback. AI processing is fully asynchronous using a bounded `ThreadPoolTaskExecutor` to ensure zero latency impact on user operations. The application is containerized using **Docker** with Docker Compose orchestrating PostgreSQL, Redis, and the application. A **React** frontend with a glassmorphism dark-mode UI provides an interview-ready demo experience.
 
 ## Live Demo / API Documentation
 
@@ -12,22 +12,28 @@ Interact with the live, deployed API via Swagger UI:
 
 ## Key Features
 - **JWT Authentication:** Secure, stateless endpoint protection using JSON Web Tokens.
-- **Role-Based Access Control (RBAC):** Granular authorization mechanisms supporting `USER` and `ADMIN` roles.
-- **Task CRUD Operations:** Complete lifecycle management for task entities.
+- **Role-Based Access Control (RBAC):** Granular authorization mechanisms supporting `USER` and `ADMIN` roles via `@PreAuthorize`.
+- **Task CRUD Operations:** Complete lifecycle management for task entities with soft deletion.
 - **Filtering & Pagination:** Dynamic query execution using Spring Data JPA Specifications.
 - **Soft Delete:** Logical record deletion to preserve data integrity and analytics.
-- **Redis Caching:** Memory-based caching layer to optimize the dashboard analytics endpoint.
-- **AWS S3 Integration:** Secure multipart file uploads for task attachments.
-- **Automated Scheduler:** Spring `@Scheduled` cron jobs to identify and isolate overdue tasks asynchronously.
+- **Redis Caching:** Distributed caching layer (via `RedisCacheManager` with JSON serialization and 10-min TTL) to optimize the dashboard analytics endpoint. Falls back to in-memory cache in dev profile.
+- **AWS S3 Integration:** Secure multipart file uploads for task attachments, with local filesystem fallback.
+- **Automated Scheduler:** Spring `@Scheduled` cron jobs to identify and log overdue tasks asynchronously.
 - **Global Exception Handling:** Centralized `@RestControllerAdvice` to format error responses system-wide.
+- **AI Task Summarization:** Automatic intelligent summarization of tasks using Google Gemini LLM API.
+- **AI Priority Prediction:** LLM-driven classification of task priority (HIGH / MEDIUM / LOW).
+- **AI Tag Extraction:** Auto-detection of relevant tags from task descriptions.
+- **Async AI Processing:** Spring `@Async` with bounded `ThreadPoolTaskExecutor` — AI calls never block the API response.
+- **React Frontend:** Dark-mode glassmorphism UI with dashboard charts (Recharts), AI insight panels, shimmer loading states, and RBAC-aware sidebar.
 
 ## System Architecture
 
 The application strictly adheres to a layered architecture pattern. This design enforces strong separation of concerns, which makes the codebase highly maintainable, testable, and naturally scalable:
 - **Controller Layer:** Intercepts HTTP requests, validates incoming DTO payloads, and routes them to the business logic layer.
-- **Service Layer:** Houses the core business logic, transaction management, and coordinates external service calls (e.g., AWS S3, Redis).
+- **Service Layer:** Houses the core business logic, transaction management, and coordinates external service calls (e.g., AWS S3, Gemini AI).
 - **Repository Layer:** Interfaces with PostgreSQL using Spring Data JPA for persistence and querying.
-- **Database Layer:** The underlying persistent data store hosted on Amazon RDS.
+- **Caching Layer:** Redis-backed distributed cache for hot-path analytics (dashboard). Uses Spring Cache abstraction — swappable with zero code changes.
+- **Database Layer:** The underlying persistent data store (PostgreSQL for production, H2 in-memory for development).
 
 ## Authentication Flow
 
@@ -56,6 +62,14 @@ This API utilizes a stateless JWT scheme:
 | GET | `/api/tasks/search?keyword=value` | Search tasks by keyword |
 | GET | `/api/tasks/dashboard` | Retrieve cached task statistics |
 | POST | `/api/tasks/{id}/upload` | Upload a file attachment to S3 |
+| GET | `/api/tasks/{id}/ai` | Retrieve AI insights for a task |
+| POST | `/api/tasks/{id}/analyze` | Manually trigger AI analysis |
+
+### Admin (Protected — ADMIN role required)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/tasks` | List all tasks across all users |
+| GET | `/api/admin/users` | List all registered users |
 
 ### Query Parameters (GET `/api/tasks`)
 | Parameter | Type | Default | Example |
@@ -70,35 +84,48 @@ This API utilizes a stateless JWT scheme:
 ## Project Structure
 ```text
 src/main/java/com/taskmanager/
-├── controller/     # REST API controllers
+├── controller/     # REST API controllers (Auth, Task, Admin)
 ├── service/        # Business logic and transactions
 ├── repository/     # Data access layer (Spring Data JPA)
 ├── entity/         # JPA entities and enums
 ├── dto/            # Request and Response mapping objects
 ├── security/       # JWT filters and authorization logic
-├── config/         # Security, Redis, and Swagger configurations
+├── config/         # Security, Redis Cache, Swagger, CORS, Async configurations
 ├── exception/      # Global exception handlers
-├── scheduler/      # Scheduled CRON jobs
+├── scheduler/      # Scheduled CRON jobs (Overdue task detection)
 └── util/           # Helper classes and mappers
 ```
 
 ## Quick Start & Build
 
 ### 1. Environment Configuration
-Copy the sample environment file and insert your PostgreSQL credentials:
+Copy the sample environment file and insert your credentials:
 ```bash
 cp .env.example .env
 ```
 
-### 2. Build & Run Locally
-Ensure you have a PostgreSQL instance running locally with a database named `taskmanager`.
+### 2. Build & Run Locally (Dev Profile — H2 + In-Memory Cache)
+No PostgreSQL or Redis needed for development:
 ```bash
 mvn clean install
-mvn spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-### 3. Build & Run via Docker
-To easily spin up the API and the PostgreSQL database simultaneously using containers:
+### 3. Build & Run via Docker (Full Stack — PostgreSQL + Redis)
+To easily spin up the API, PostgreSQL database, and Redis simultaneously:
 ```bash
 docker-compose up --build
 ```
+
+### 4. Production (AWS EC2 with RDS)
+```bash
+docker-compose -f docker-compose.prod.yml up --build -d
+```
+
+### 5. Frontend (React)
+```bash
+cd ../task-manager-ui
+npm install
+npm run dev
+```
+The React app runs on `http://localhost:5173` and connects to the Spring Boot API.
