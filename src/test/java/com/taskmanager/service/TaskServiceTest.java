@@ -32,6 +32,9 @@ class TaskServiceTest {
     @Mock
     private TaskRepository taskRepository;
 
+    @Mock
+    private AiAnalysisService aiAnalysisService;
+
     @InjectMocks
     private TaskService taskService;
 
