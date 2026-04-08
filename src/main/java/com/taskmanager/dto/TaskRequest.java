@@ -1,7 +1,8 @@
 package com.taskmanager.dto;
 
 import com.taskmanager.entity.enums.TaskPriority;
-import jakarta.validation.constraints.Future;
+import com.taskmanager.entity.enums.TaskStatus;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
@@ -19,8 +20,10 @@ public class TaskRequest {
 
     private String description;
 
+    private TaskStatus status;
+
     private TaskPriority priority;
 
-    @Future(message = "Due date must be in the future")
+    @FutureOrPresent(message = "Due date cannot be in the past")
     private LocalDate dueDate;
 }

@@ -21,14 +21,20 @@ public class DtoMapper {
                 .dueDate(task.getDueDate())
                 .fileUrl(task.getFileUrl())
                 .createdAt(task.getCreatedAt())
+                .aiSummary(task.getAiSummary())
+                .aiPriority(task.getAiPriority())
+                .aiTags(task.getAiTags())
+                .aiStatus(task.getAiStatus())
                 .build();
     }
+
 
     public static AuthResponse toAuthResponse(User user, String token) {
         return AuthResponse.builder()
                 .token(token)
                 .email(user.getEmail())
                 .name(user.getName())
+                .role(user.getRole().name())
                 .build();
     }
 }

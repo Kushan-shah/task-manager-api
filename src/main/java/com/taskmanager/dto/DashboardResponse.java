@@ -14,4 +14,6 @@ public class DashboardResponse {
     private long inProgressCount;
     private long doneCount;
     private long overdueCount;
+    private double completionRate;
+    private long aiAnalyzedCount;
 }

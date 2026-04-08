@@ -1,5 +1,6 @@
 package com.taskmanager.dto;
 
+import com.taskmanager.entity.enums.AiStatus;
 import com.taskmanager.entity.enums.TaskPriority;
 import com.taskmanager.entity.enums.TaskStatus;
 import lombok.*;
@@ -22,4 +23,10 @@ public class TaskResponse {
     private LocalDate dueDate;
     private String fileUrl;
     private LocalDateTime createdAt;
+
+    // AI Fields
+    private String aiSummary;
+    private TaskPriority aiPriority;
+    private String aiTags;
+    private AiStatus aiStatus;
 }
