@@ -86,7 +86,9 @@ public class SecurityConfig {
                 "http://localhost:5173",   // Vite React dev server
                 "http://localhost:3000",   // CRA dev server fallback
                 "http://13.126.55.172",   // AWS EC2
-                "https://task-manager-api-live.onrender.com"
+                "https://task-manager-api-live.onrender.com",
+                "https://taskflow-ui-two.vercel.app", // The Vercel Frontend
+                "https://*.vercel.app" // Fallback for any other Vercel links
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
