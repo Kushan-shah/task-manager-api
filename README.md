@@ -7,9 +7,9 @@ An **AI-augmented backend system with asynchronous LLM processing** that enhance
 
 This project is built as a fully decoupled frontend-backend architecture (service-oriented).
 
-- **Frontend Application (Live):** [https://taskflow-ui-two.vercel.app/](https://taskflow-ui-two.vercel.app/)
+- **Frontend Application (Live):** [https://taskflow.kushan.codes/](https://taskflow.kushan.codes/)
 - **Frontend Source Code:** [https://github.com/Kushan-shah/TaskFlow-UI](https://github.com/Kushan-shah/TaskFlow-UI)
-- **Primary Backend API (AWS EC2):** [http://65.2.191.152:8080/swagger-ui/index.html#/](http://65.2.191.152:8080/swagger-ui/index.html#/)
+- **Primary Backend API (AWS EC2):** [http://api.taskflow.kushan.codes:8080/swagger-ui/index.html#/](http://api.taskflow.kushan.codes:8080/swagger-ui/index.html#/)
 - **Fallback Backend API (Render):** [https://task-manager-api-live.onrender.com/swagger-ui/index.html#/](https://task-manager-api-live.onrender.com/swagger-ui/index.html#/)
 - **Backend Source Code:** [https://github.com/Kushan-shah/TaskFlow-AI](https://github.com/Kushan-shah/TaskFlow-AI)
 
